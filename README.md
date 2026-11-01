@@ -10,7 +10,7 @@ It's a fan-made project, not affiliated with Taylor Swift or her labels. It uses
 2. **Narrow it down:** keep 10 from that shortlist. People need at least 10 picks to continue.
 3. **Rank:** drag the 10 into order, or use the arrows.
 4. **See results:** one of 13 personas, then tabs for the top 10, album breakdown, three superlatives and the full shortlist.
-5. **Share:** in the Share tab, add a name if you like, then swipe between the Top 10, Albums, Superlatives and Shortlist cards. Sharing sends the card in view. There's also a link to the full results.
+5. **Share:** in the Share tab, add a name if you like, then swipe between the Top 10, Albums, Superlatives and Shortlist cards. Share and Save image use the card in view, and **Save all** saves every card at once. There's also a link to the full results.
 
 **How the results are worked out**
 
@@ -19,7 +19,7 @@ It's a fan-made project, not affiliated with Taylor Swift or her labels. It uses
 - **Shortlist card:** it fits up to 30 songs. Past that, it keeps the top 10 and takes the rest evenly across albums. The full list is always in the Shortlist tab.
 - **Colors and headline font:** these come from the album that leads on the same 70/30 split as personas, so a long shortlist from one album doesn't outweigh a ranked favorite.
 
-**Saving images:** on phones, **Share** opens the phone's share menu, which on iPhones includes **Save Image**. Browsers that can't share a file download the image instead.
+**Saving images:** on iPhones and iPads, **Save image** opens the share menu, where people tap **Save Image** to add it to Photos, because a website can't save straight to Photos. Android and computers download the file. If a browser can't share a file, **Share** saves the image instead.
 
 The site has no backend, accounts or tracking. Progress is saved in the person's browser until they choose **Start over and clear my results**, which also clears their name. Share links carry the results and optional name in the URL. The only outside requests are for Google Fonts.
 
