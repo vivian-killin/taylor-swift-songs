@@ -496,18 +496,38 @@
   const isIOS = () =>
     /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
-  function downloadCard(i) {
-    const a = h("a", { href: cardState.urls[i], download: CARDS[i].file });
-    document.body.append(a);
-    a.click();
-    a.remove();
-    toast("Image saved");
+  const cardsReady = (indexes) => {
+    const ready = indexes.every((i) => cardState.blobs[i]);
+    if (!ready) toast("One moment, still making your images.");
+    return ready;
+  };
+
+  /* A site can't write to Photos directly. On iPhones, the share sheet's "Save Image" is the way there. */
+  async function saveCards(indexes) {
+    if (!cardsReady(indexes)) return;
+    if (isIOS()) {
+      const files = indexes.map(cardFile);
+      if (!navigator.share || !navigator.canShare || !navigator.canShare({ files })) {
+        toast("Press and hold an image to save it.");
+        return;
+      }
+      try { await navigator.share({ files }); }
+      catch (e) { if (e.name !== "AbortError") toast("Press and hold an image to save it."); }
+      return;
+    }
+    indexes.forEach((i, order) => setTimeout(() => {
+      const a = h("a", { href: cardState.urls[i], download: CARDS[i].file });
+      document.body.append(a);
+      a.click();
+      a.remove();
+    }, order * 400));
+    toast(indexes.length > 1 ? "Images saved" : "Image saved");
   }
 
-  /* The share sheet also offers "Save Image" on iPhones. Browsers that can't share a file get a download. */
+  /* Browsers that can't share a file save the image instead. */
   async function shareCard(title) {
     const i = cardState.current;
-    if (!cardState.blobs[i]) { toast("One moment, still making your image."); return; }
+    if (!cardsReady([i])) return;
     const files = [cardFile(i)];
     if (navigator.share && navigator.canShare && navigator.canShare({ files })) {
       /* iPhones can drop the Save Image option when text is attached. The card already shows the site address. */
@@ -515,8 +535,7 @@
       try { await navigator.share(data); return; }
       catch (e) { if (e.name === "AbortError") return; }
     }
-    if (isIOS()) toast("Press and hold the image to save it.");
-    else downloadCard(i);
+    saveCards([i]);
   }
 
   async function copyText(value, message) {
@@ -659,11 +678,15 @@
         h("div", { class: "card-pager" }, cardName, h("div", { class: "card-dots" }, dots)),
         scroller,
         h("p", { class: "card-note muted" }, `Swipe to see all ${CARDS.length} cards. The shortlist card shows up to ${SHORTLIST_CARD_MAX} songs.`),
-        h("button", { class: "btn", on: { click: () => shareCard(listTitle(state.name, fallback)) } }, "Share"),
-        h("button", {
-          class: "link-btn copy-link",
-          on: { click: () => copyText(shareLink(state.top, state.picks, state.name), "Link copied") },
-        }, "Copy a link to my full results"),
+        h("div", { class: "share-actions" },
+          h("button", { class: "btn", on: { click: () => shareCard(listTitle(state.name, fallback)) } }, "Share"),
+          h("button", { class: "btn ghost", on: { click: () => saveCards([cardState.current]) } }, "Save image")),
+        h("div", { class: "share-links" },
+          h("button", { class: "link-btn", on: { click: () => saveCards(CARDS.map((c, i) => i)) } }, `Save all ${CARDS.length} images`),
+          h("button", {
+            class: "link-btn",
+            on: { click: () => copyText(shareLink(state.top, state.picks, state.name), "Link copied") },
+          }, "Copy a link to my full results")),
       ] });
       refreshCards(result, state.name, previews);
     }
