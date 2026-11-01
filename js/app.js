@@ -1,6 +1,6 @@
 /* Screens and interaction. State lives in `state`; every change saves and re-renders. */
 (function () {
-  const { CATALOG, TOP_N, MAX_NAME, sectionOf, analyze, searchSongs, cleanName, versionLabel, encodeResult, decodeResult } = window.TS;
+  const { CATALOG, TOP_N, MAX_NAME, SHORTLIST_CARD_MAX, sectionOf, analyze, searchSongs, cleanName, versionLabel, encodeResult, decodeResult } = window.TS;
   const STORAGE_KEY = "top10-your-version-v1";
   const SHELL_THEME = { bg: "#251433", ink: "#FBF3E4", accent: "#F5C95D", accentInk: "#2A1800" };
   const QUIZ_FONT = {
@@ -46,7 +46,7 @@
       else if (key === "style") Object.assign(node.style, value);
       else node.setAttribute(key, value === true ? "" : value);
     }
-    for (const child of children.flat()) {
+    for (const child of children.flat(Infinity)) {
       if (child != null && child !== false) node.append(child);
     }
     return node;
@@ -470,6 +470,7 @@
     { kind: "top10", label: "Top 10", file: "top-10-taylor-swift-songs.png", alt: "Top 10 songs and persona" },
     { kind: "albums", label: "Albums", file: "taylor-swift-album-breakdown.png", alt: "Album breakdown" },
     { kind: "superlatives", label: "Superlatives", file: "taylor-swift-superlatives.png", alt: "Persona and superlatives" },
+    { kind: "shortlist", label: "Shortlist", file: "taylor-swift-shortlist.png", alt: "Shortlisted songs" },
   ];
 
   /* Sharing a file must start right from the tap on iPhones, so the images are made ahead of time. */
@@ -544,11 +545,67 @@
     const setHeading = (name) => heading.replaceChildren(
       "Top ", h("span", { class: "digits" }, "10"), listTitle(name, fallback).replace("Top 10", ""));
     setHeading(data.name);
-    const previews = CARDS.map((c) => h("img", { class: "card-preview", alt: `Share image: ${c.alt}` }));
 
-    let shareSection = null;
+    const hero = h("section", { class: "result-hero" },
+      h("p", { class: "kicker" }, friend ? (friendName ? `${friendName} is` : "They are") : "You are"),
+      h("h1", { tabindex: "-1" }, result.persona.name),
+      h("p", { class: "line" }, result.persona.line),
+      h("p", { class: "roast" }, result.persona.roast),
+      h("div", { class: "stats" },
+        h("div", { class: "stat" }, h("b", { class: result.topAlbum.short.length > 8 ? "long" : null }, result.topAlbum.short), h("span", null, "top album")),
+        h("div", { class: "stat" }, h("b", { class: "digits" }, String(result.avgYear)), h("span", null, "average era")),
+        h("div", { class: "stat" }, h("b", { class: "digits" }, `${result.albumsRepresented} of ${CATALOG.sections.length}`), h("span", null, "sections picked"))));
+
+    const shortlistGroups = CATALOG.sections
+      .map((section) => ({ section, songs: result.shortlist.filter((song) => song.section === section.code) }))
+      .filter((group) => group.songs.length);
+
+    const panels = [
+      { label: "Top 10", body: [
+        heading,
+        h("ol", { class: "final" }, result.topSongs.map((song, i) => h("li", null,
+          h("span", { class: "rank-num" }, String(i + 1)),
+          h("span", null, h("span", { class: "title" }, song.title), h("span", { class: "meta" }, metaLine(song, true)))))),
+      ] },
+      { label: "Albums", body: [
+        h("h2", null, "By album"),
+        h("p", { class: "sub" }, `${result.streak} Every shortlisted song earns a point, with up to 10 more for a spot in the top 10.`),
+        result.albums.filter((a) => a.score > 0).map((album) => h("div", { class: "album-row" },
+          h("div", { class: "label" },
+            h("span", { class: "swatch", style: { background: album.theme.bg }, "aria-hidden": "true" }),
+            h("span", { class: "name" }, album.short),
+            h("span", { class: "val" }, `${album.score} pts · ${album.inTop} in top 10`)),
+          h("div", { class: "track", "aria-hidden": "true" },
+            h("div", { class: "fill", style: { width: `${(album.score / maxScore) * 100}%` } })))),
+      ] },
+      { label: "Superlatives", body: [
+        h("h2", null, "Superlatives"),
+        h("p", { class: "sub" }, "Voted most likely by nobody but your own list."),
+        result.superlatives.map((s) => h("div", { class: "super" }, h("b", { class: /\d/.test(s.name) ? "digits" : null }, s.name), s.blurb)),
+      ] },
+      { label: "Shortlist", body: [
+        h("h2", null, friend ? "Full shortlist" : "Your full shortlist"),
+        h("p", { class: "sub" }, `${result.shortlist.length} songs made the first cut.${friend ? "" : ` The share image fits up to ${SHORTLIST_CARD_MAX}.`}`),
+        shortlistGroups.map(({ section, songs }) => [
+          h("div", { class: "short-album" },
+            h("span", { class: "swatch", style: { background: section.theme.bg }, "aria-hidden": "true" }),
+            `${section.short} (${songs.length})`),
+          h("ul", { class: "short-list" }, songs.map((song) => {
+            const rank = result.topSongs.indexOf(song);
+            const meta = metaLine(song, false);
+            return h("li", null,
+              h("span", { class: "text" }, h("span", { class: "title" }, song.title), meta && h("span", { class: "meta" }, meta)),
+              rank > -1 && h("span", { class: "short-rank" }, `#${rank + 1}`));
+          })),
+        ]),
+      ] },
+    ];
+
+    /* Moves the carousel to a card. It only has a size once the Share tab is showing. */
+    let showCard = () => {};
     if (!friend) {
       let timer;
+      const previews = CARDS.map((c) => h("img", { class: "card-preview", alt: `Share image: ${c.alt}` }));
       const nameInput = h("input", {
         type: "text",
         maxlength: MAX_NAME,
@@ -567,19 +624,19 @@
           keydown: (e) => { if (e.key === "Enter") e.target.blur(); },
         },
       });
-      /* Swipe between cards, or tap a tab. Save and Share act on the card in view. */
+
       cardState.current = 0;
-      const tabs = CARDS.map((c, i) => h("button", {
-        class: "card-tab",
+      const dots = CARDS.map((c, i) => h("button", {
+        class: "card-dot",
+        "aria-label": `Show the ${c.label} card`,
         "aria-pressed": i === 0 ? "true" : "false",
-        on: { click: () => {
-          const slide = scroller.children[i];
-          scroller.scrollTo({ left: slide.offsetLeft - (scroller.clientWidth - slide.offsetWidth) / 2, behavior: "smooth" });
-        } },
-      }, c.label));
+        on: { click: () => moveTo(i, "smooth") },
+      }));
+      const cardName = h("span", { class: "card-name" }, `${CARDS[0].label} · 1 of ${CARDS.length}`);
       const setCurrent = (i) => {
         cardState.current = i;
-        tabs.forEach((tab, t) => tab.setAttribute("aria-pressed", t === i ? "true" : "false"));
+        cardName.textContent = `${CARDS[i].label} · ${i + 1} of ${CARDS.length}`;
+        dots.forEach((dot, d) => dot.setAttribute("aria-pressed", d === i ? "true" : "false"));
       };
       const scroller = h("div", {
         class: "card-scroller",
@@ -590,67 +647,87 @@
           setCurrent(slides.indexOf(slides.reduce((best, el) => (distance(el) < distance(best) ? el : best))));
         } },
       }, previews.map((img) => h("div", { class: "card-slide" }, img)));
+      const moveTo = (i, behavior) => {
+        const slide = scroller.children[i];
+        scroller.scrollTo({ left: slide.offsetLeft - (scroller.clientWidth - slide.offsetWidth) / 2, behavior });
+      };
+      showCard = (i) => { moveTo(i, "auto"); setCurrent(i); };
 
-      shareSection = h("section", { class: "panel share", id: "share" },
+      panels.push({ label: "Share", body: [
         h("h2", null, "Share your results"),
         h("label", { class: "field" }, "Add your name (optional)", nameInput),
-        h("p", { class: "swipe-note muted" }, "Swipe for all 3 cards."),
-        h("div", { class: "card-tabs" }, tabs),
+        h("div", { class: "card-pager" }, cardName, h("div", { class: "card-dots" }, dots)),
         scroller,
+        h("p", { class: "card-note muted" }, `Swipe to see all ${CARDS.length} cards. The shortlist card shows up to ${SHORTLIST_CARD_MAX} songs.`),
         h("button", { class: "btn", on: { click: () => shareCard(listTitle(state.name, fallback)) } }, "Share"),
-        h("div", { class: "result-links" },
-          h("button", {
-            class: "link-btn",
-            on: { click: () => copyText(shareLink(state.top, state.picks, state.name), "Link copied") },
-          }, "Copy a link to my full results"),
-          h("button", { class: "link-btn", on: { click: () => go("rank") } }, "Change my order"),
-          h("button", { class: "link-btn", on: { click: restart } }, "Start over and clear my results")));
+        h("button", {
+          class: "link-btn copy-link",
+          on: { click: () => copyText(shareLink(state.top, state.picks, state.name), "Link copied") },
+        }, "Copy a link to my full results"),
+      ] });
       refreshCards(result, state.name, previews);
     }
 
+    /* Tabs keep the page short. The Share tab opens on the card matching the tab you came from. */
+    const shareIndex = panels.findIndex((p) => p.label === "Share");
+    let active = 0;
+    const panelEls = panels.map((panel, i) => h("section", {
+      class: "panel",
+      id: `panel-${i}`,
+      role: "tabpanel",
+      "aria-labelledby": `tab-${i}`,
+      hidden: i !== 0,
+    }, panel.body));
+    const tabEls = panels.map((panel, i) => h("button", {
+      class: "result-tab",
+      id: `tab-${i}`,
+      role: "tab",
+      "aria-controls": `panel-${i}`,
+      "aria-selected": i === 0 ? "true" : "false",
+      tabindex: i === 0 ? "0" : "-1",
+      on: {
+        click: () => selectTab(i),
+        keydown: (e) => {
+          const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+          if (!step) return;
+          const next = (i + step + panels.length) % panels.length;
+          selectTab(next);
+          tabEls[next].focus();
+        },
+      },
+    }, panel.label));
     const stickyBar = h("div", { class: "bar" }, h("div", { class: "bar-inner" },
       friend
         ? h("button", { class: "btn", on: { click: leaveFriendResult } }, "Make your own")
-        : h("button", { class: "btn", on: { click: () => shareSection.scrollIntoView({ behavior: "smooth" }) } }, "Share my list ↓")));
-    if (shareSection) {
-      resultsObserver = new IntersectionObserver(([entry]) => { stickyBar.hidden = entry.isIntersecting; });
-      resultsObserver.observe(shareSection);
+        : h("button", { class: "btn", on: { click: () => selectTab(shareIndex) } }, "Share my results")));
+
+    function selectTab(i) {
+      const cameFrom = active;
+      active = i;
+      panelEls.forEach((el, p) => { el.hidden = p !== i; });
+      tabEls.forEach((tab, t) => {
+        tab.setAttribute("aria-selected", t === i ? "true" : "false");
+        tab.setAttribute("tabindex", t === i ? "0" : "-1");
+      });
+      tabEls[i].scrollIntoView({ block: "nearest", inline: "nearest" });
+      if (i === shareIndex) {
+        stickyBar.hidden = true;
+        if (cameFrom !== shareIndex) showCard(cameFrom);
+      } else {
+        stickyBar.hidden = false;
+      }
+      const tabsTop = hero.getBoundingClientRect().bottom + window.scrollY;
+      if (window.scrollY > tabsTop) window.scrollTo(0, tabsTop);
     }
 
     return [
       friend && h("p", { class: "friend-note" }, friendName ? `${friendName} shared their results with you.` : "A friend shared their results with you."),
-      h("section", { class: "result-hero" },
-        h("p", { class: "kicker" }, friend ? (friendName ? `${friendName} is` : "They are") : "You are"),
-        h("h1", { tabindex: "-1" }, result.persona.name),
-        h("p", { class: "line" }, result.persona.line),
-        h("p", { class: "roast" }, result.persona.roast),
-        h("div", { class: "stats" },
-          h("div", { class: "stat" }, h("b", { class: result.topAlbum.short.length > 8 ? "long" : null }, result.topAlbum.short), h("span", null, "top album")),
-          h("div", { class: "stat" }, h("b", { class: "digits" }, String(result.avgYear)), h("span", null, "average era")),
-          h("div", { class: "stat" }, h("b", { class: "digits" }, `${result.albumsRepresented} of ${CATALOG.sections.length}`), h("span", null, "sections picked")))),
-      h("section", { class: "panel" },
-        heading,
-        h("ol", { class: "final" }, result.topSongs.map((song, i) => {
-          const meta = metaLine(song, true);
-          return h("li", null,
-            h("span", { class: "rank-num" }, String(i + 1)),
-            h("span", null, h("span", { class: "title" }, song.title), h("span", { class: "meta" }, meta)));
-        }))),
-      h("section", { class: "panel" },
-        h("h2", null, "By album"),
-        h("p", { class: "sub" }, `${result.streak} Every shortlisted song earns a point, with up to 10 more for a spot in the top 10.`),
-        result.albums.filter((a) => a.score > 0).map((album) => h("div", { class: "album-row" },
-          h("div", { class: "label" },
-            h("span", { class: "swatch", style: { background: album.theme.bg }, "aria-hidden": "true" }),
-            h("span", { class: "name" }, album.short),
-            h("span", { class: "val" }, `${album.score} pts · ${album.inTop} in top 10`)),
-          h("div", { class: "track", "aria-hidden": "true" },
-            h("div", { class: "fill", style: { width: `${(album.score / maxScore) * 100}%` } }))))),
-      h("section", { class: "panel" },
-        h("h2", null, "Superlatives"),
-        h("p", { class: "sub" }, "Voted most likely by nobody but your own list."),
-        result.superlatives.map((s) => h("div", { class: "super" }, h("b", { class: /\d/.test(s.name) ? "digits" : null }, s.name), s.blurb))),
-      shareSection,
+      hero,
+      h("div", { class: "result-tabs", role: "tablist", "aria-label": "Your results" }, tabEls),
+      panelEls,
+      !friend && h("div", { class: "result-links" },
+        h("button", { class: "link-btn", on: { click: () => go("rank") } }, "Change my order"),
+        h("button", { class: "link-btn", on: { click: restart } }, "Start over and clear my results")),
       stickyBar,
       h("p", { class: "fine" }, "A fan-made project, not affiliated with Taylor Swift or her labels."),
     ];
@@ -659,9 +736,7 @@
   /* ---------- Render ---------- */
   const SCREENS = { intro: renderIntro, section: renderSection, short: renderShort, cut: renderCut, rank: renderRank, results: renderResults };
 
-  let resultsObserver = null;
   function render(options) {
-    if (resultsObserver) { resultsObserver.disconnect(); resultsObserver = null; }
     let screen = friendResult ? "results" : state.screen;
     /* A saved state may no longer support the screen it was on. */
     if (!friendResult && (screen === "rank" || screen === "results") && state.top.length !== TOP_N) {

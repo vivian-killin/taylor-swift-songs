@@ -122,6 +122,12 @@
       roast:
         "You love the songs everyone loves, and you refuse to apologize. While others argue about track 14 of a deluxe edition, you're having a great time. You may be the only well-adjusted person here, which is a little suspicious.",
     },
+    poppurist: {
+      name: "The Pop Purist",
+      line: "Give you a synth and a big chorus, and you'll ask no further questions.",
+      roast:
+        "You like your heartbreak with a beat drop and your feelings in 4/4. Someone mentioned a cardigan and you asked if it came in sequins. You don't need a lake, a cabin or a fictional love triangle. You need a chorus, and you need it now.",
+    },
     newera: {
       name: "The New Era Apologist",
       line: "The past is lovely. You just don't live there.",
@@ -147,6 +153,8 @@
     { persona: "poet", sections: ["tt"], min: 0.3 },
     { persona: "showgirl", sections: ["sg"], min: 0.3 },
   ];
+  const POP_CLASSIC = ["ne", "lo"];
+  const POP_RECENT = ["mi", "sg"];
   const OLD = ["de", "fe", "sn", "re"];
   const NEW = ["mi", "tt", "sg"];
 
@@ -155,6 +163,15 @@
     const sum = (codes) => codes.reduce((total, code) => total + (shares[code] || 0), 0);
     const leads = (code) =>
       Object.entries(shares).every(([other, share]) => other === code || shares[code] >= share * 1.3);
+    /* Pop across eras: at least 3 of the 4 pop albums, with both older and newer pop in the mix. */
+    const pop = [...POP_CLASSIC, ...POP_RECENT];
+    if (
+      sum(pop) >= 0.55
+      && pop.filter((code) => shares[code] >= 0.08).length >= 3
+      && sum(POP_CLASSIC) >= 0.2
+      && sum(POP_RECENT) >= 0.2
+      && !POP_RECENT.some(leads)
+    ) return "poppurist";
     const qualifying = GROUPS.map((g) => ({ ...g, share: sum(g.sections) }))
       .filter((g) => g.share >= g.min && (g.sections.length > 1 || leads(g.sections[0])))
       .sort((a, b) => b.share / b.min - a.share / a.min);
@@ -184,6 +201,23 @@
     { name: "Certified Listener", blurb: "You have ears, opinions and a ranked list. That's more than most.", test: () => true },
     { name: "Would Absolutely Reshuffle", blurb: "Ask again tomorrow and this list changes. We all know it.", test: () => true },
   ];
+
+  const SHORTLIST_CARD_MAX = 30;
+  const catalogOrder = new Map([...CATALOG.byId.keys()].map((id, i) => [id, i]));
+  const inCatalogOrder = (ids) => [...ids].sort((a, b) => catalogOrder.get(a) - catalogOrder.get(b));
+
+  /* The share card fits 30 songs: the top 10 always, then the rest taken evenly across albums. */
+  function shortlistForCard(topIds, ids) {
+    const chosen = new Set(topIds);
+    const queues = CATALOG.sections.map((section) =>
+      inCatalogOrder(ids.filter((id) => CATALOG.byId.get(id).section === section.code && !chosen.has(id))));
+    while (chosen.size < SHORTLIST_CARD_MAX && queues.some((queue) => queue.length)) {
+      for (const queue of queues) {
+        if (queue.length && chosen.size < SHORTLIST_CARD_MAX) chosen.add(queue.shift());
+      }
+    }
+    return inCatalogOrder([...chosen]);
+  }
 
   function analyze(topIds, pickIds) {
     const ids = [...new Set([...topIds, ...pickIds])];
@@ -256,6 +290,8 @@
         : `All ${albums[0].short}, all the time.`,
       topSongs,
       picks,
+      shortlist: inCatalogOrder(ids).map((id) => CATALOG.byId.get(id)),
+      shortlistCard: shortlistForCard(topIds, ids).map((id) => CATALOG.byId.get(id)),
       avgYear: Math.round(weightedYear),
       albumsRepresented: albums.filter((a) => a.picks > 0).length,
       superlatives: SUPERLATIVES.filter((s) => s.test(context)).slice(0, 3),
@@ -313,7 +349,7 @@
   }
 
   const api = {
-    CATALOG, TOP_N, MAX_NAME, PERSONAS, SUPERLATIVES,
+    CATALOG, TOP_N, MAX_NAME, SHORTLIST_CARD_MAX, PERSONAS, SUPERLATIVES,
     sectionOf, isDeep, analyze, searchSongs, cleanName, versionLabel, encodeResult, decodeResult,
   };
   root.TS = api;

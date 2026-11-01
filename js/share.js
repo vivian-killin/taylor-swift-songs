@@ -1,4 +1,4 @@
-/* Draws the 1080x1350 share cards from a results object: top 10, album breakdown, superlatives. */
+/* Draws the 1080x1350 share cards from a results object: top 10, album breakdown, superlatives, shortlist. */
 (function (root) {
   const W = 1080;
   const H = 1350;
@@ -250,10 +250,41 @@
     });
   }
 
+  /* One column up to 15 songs, then two. Each song's dot is its album's color. */
+  function drawShortlist(ctx, result, y, bottom, env) {
+    const { theme, textFamily, contentW } = env;
+    y += 30;
+    divider(ctx, y, theme);
+    const songs = result.shortlistCard;
+    const columns = songs.length > 15 ? 2 : 1;
+    const perColumn = Math.ceil(songs.length / columns);
+    const rowH = Math.min(66, (bottom - y - 12) / perColumn);
+    const gap = 26;
+    const colW = (contentW - gap * (columns - 1)) / columns;
+    const size = Math.round(Math.min(rowH * 0.56, columns === 1 ? 38 : 29));
+    const dot = size * 0.32;
+    songs.forEach((song, i) => {
+      const col = Math.floor(i / perColumn);
+      const x = M + 8 + col * (colW + gap);
+      const base = y + 10 + rowH * (i % perColumn + 1) - rowH * 0.28;
+      ctx.beginPath();
+      ctx.arc(x + dot, base - size * 0.33, dot, 0, Math.PI * 2);
+      ctx.fillStyle = root.TS.sectionOf(song).theme.bg;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = theme.ink;
+      ctx.stroke();
+      ctx.fillStyle = theme.ink;
+      ctx.font = `600 ${size}px ${textFamily}`;
+      ctx.fillText(ellipsize(ctx, song.title, colW - dot * 2 - 12), x + dot * 2 + 12, base);
+    });
+  }
+
   const CARD_TYPES = {
     top10: { kicker: "Top 10 Taylor Swift Songs:", title: (clean) => root.TS.versionLabel(clean), draw: drawTop10 },
     albums: { kicker: "Top 10 Taylor Swift Songs", title: (clean) => `${clean ? `${clean}'s` : "My"} Album Breakdown`, draw: drawAlbums },
     superlatives: { kicker: "Top 10 Taylor Swift Songs", title: (clean) => `${clean ? `${clean}'s` : "My"} Superlatives`, draw: drawSuperlatives },
+    shortlist: { kicker: "Top Taylor Swift Songs", title: (clean) => `${clean ? `${clean}'s` : "My"} Shortlist`, draw: drawShortlist },
   };
 
   async function drawShareImage(result, { name, site, kind = "top10" }) {
