@@ -1,6 +1,6 @@
 # Top 10 (Your Version)
 
-A mobile-first quiz for ranking your 10 favorite Taylor Swift songs. It finishes with an album breakdown, a playful persona, superlatives and three shareable image cards with an optional name ("Top 10 Taylor Swift Songs: Vivian's Version").
+A mobile-first quiz for ranking your 10 favorite Taylor Swift songs. It finishes with an album breakdown, a playful persona, superlatives and four shareable image cards with an optional name ("Top 10 Taylor Swift Songs: Vivian's Version").
 
 It's a fan-made project, not affiliated with Taylor Swift or her labels. It uses song titles only, with no lyrics, audio or cover art.
 
@@ -9,13 +9,14 @@ It's a fan-made project, not affiliated with Taylor Swift or her labels. It uses
 1. **Pick:** check as many favorites as you like on each page: the 12 albums, plus one page of non-album songs. Any page can be skipped. Search finds songs from any album by title, featured artist or movie.
 2. **Narrow it down:** keep 10 from that shortlist. People need at least 10 picks to continue.
 3. **Rank:** drag the 10 into order, or use the arrows.
-4. **See results:** the album breakdown, one of 12 personas, and three superlatives.
-5. **Share:** add a name if you like, then swipe between the Top 10, Albums and Superlatives cards. Sharing sends the card in view. There's also a link to the full results.
+4. **See results:** one of 13 personas, then tabs for the top 10, album breakdown, three superlatives and the full shortlist.
+5. **Share:** in the Share tab, add a name if you like, then swipe between the Top 10, Albums, Superlatives and Shortlist cards. Sharing sends the card in view. There's also a link to the full results.
 
 **How the results are worked out**
 
 - **Album breakdown:** every shortlisted song earns 1 point, and the top 10 earn more on top of that: 10 for #1, down to 1 for #10.
 - **Personas:** the ranked top 10 counts for 70% and the shortlist for 30%, so picking more songs doesn't water down a favorite album.
+- **Shortlist card:** it fits up to 30 songs. Past that, it keeps the top 10 and takes the rest evenly across albums. The full list is always in the Shortlist tab.
 - **Colors and headline font:** these come from the album that leads on the same 70/30 split as personas, so a long shortlist from one album doesn't outweigh a ranked favorite.
 
 **Saving images:** on phones, **Share** opens the phone's share menu, which on iPhones includes **Save Image**. Browsers that can't share a file download the image instead.
