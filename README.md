@@ -1,17 +1,26 @@
 # Top 10 (Your Version)
 
-A mobile-first quiz for ranking your 10 favorite Taylor Swift songs. It finishes with an album breakdown, a playful persona, superlatives and a shareable image with an optional name ("Top 10 Taylor Swift Songs: Vivian's Version").
+A mobile-first quiz for ranking your 10 favorite Taylor Swift songs. It finishes with an album breakdown, a playful persona, superlatives and three shareable image cards with an optional name ("Top 10 Taylor Swift Songs: Vivian's Version").
 
 It's a fan-made project, not affiliated with Taylor Swift or her labels. It uses song titles only, with no lyrics, audio or cover art.
 
 ## How it works
 
-1. **Pick:** tap up to 5 favorites from each of the 12 albums, plus a non-album section. Search finds any song from any screen.
-2. **Cut:** keep 10 from that shortlist.
-3. **Rank:** drag them into order.
-4. **Results:** every shortlisted song earns 1 point, and the top 10 earn 10 more points for #1, down to 1 more for #10. Those points drive the album breakdown and persona.
+1. **Pick:** check up to 7 songs on each page: the 12 albums, plus one page of non-album songs. Any page can be skipped. Search finds songs from any album by title, featured artist or movie.
+2. **Narrow it down:** keep 10 from that shortlist. People need at least 10 picks to continue.
+3. **Rank:** drag the 10 into order, or use the arrows.
+4. **See results:** the album breakdown, one of 12 personas, and three superlatives.
+5. **Share:** add a name if you like, then swipe between the Top 10, Albums and Superlatives cards. Each one can be saved or shared, or all three saved together. There's also a link to the full results.
 
-The site has no backend, accounts or tracking. Progress is saved in the person's browser, and share links carry the results (and the optional name) in the URL. The only outside requests are for Google Fonts.
+**How the results are worked out**
+
+- **Album breakdown:** every shortlisted song earns 1 point, and the top 10 earn more on top of that: 10 for #1, down to 1 for #10.
+- **Personas:** the ranked top 10 counts for 70% and the shortlist for 30%, so picking more songs doesn't water down a favorite album.
+- **Colors and headline font:** these come from the album with the most points.
+
+**Saving images:** on iPhones and iPads, **Save to Photos** opens the share menu, where people tap **Save Image**, because a website can't save straight to Photos. Android and computers download the file.
+
+The site has no backend, accounts or tracking. Progress is saved in the person's browser until they choose **Start over and clear my results**, which also clears their name. Share links carry the results and optional name in the URL. The only outside requests are for Google Fonts.
 
 ## Site address
 
@@ -19,9 +28,9 @@ The site lives at https://vivian-killin.github.io/taylor-swift-songs/. Share ima
 
 ## Fonts
 
-All fonts are free lookalikes from Google Fonts, because the originals are mostly commercial or her own handwriting. Fan sources disagree on several of them. The quiz uses Jost, a clean retro sans serif chosen for readability. Results use a font based on the person's top album:
+All fonts are free lookalikes from Google Fonts, because the originals are mostly commercial or her own handwriting. Fan sources disagree on several of them. The quiz uses Jost, a clean retro sans serif chosen for readability. Results headlines use a font based on the person's top album:
 
-| Album | Font |
+| Album | Headline font |
 |---|---|
 | Taylor Swift | Yellowtail |
 | Fearless | Arsenal |
@@ -36,7 +45,7 @@ All fonts are free lookalikes from Google Fonts, because the originals are mostl
 | The Life of a Showgirl | Barlow Condensed |
 | Non-album | Jost |
 
-To change one, edit `FONTS` at the bottom of `js/data.js`.
+Longer text on results pages uses Libre Caslon for folklore, evermore and The Tortured Poets Department, and the device's standard font for everything else. To change a font, edit `FONTS` at the bottom of `js/data.js`.
 
 ## Put it on GitHub Pages
 
@@ -45,6 +54,8 @@ To change one, edit `FONTS` at the bottom of `js/data.js`.
 3. Commit the upload.
 4. Go to **Settings → Pages**. Under **Build and deployment**, choose **Deploy from a branch**, then select `main` and `/ (root)`, and save.
 5. After a minute or two, the site is live at https://vivian-killin.github.io/taylor-swift-songs/.
+
+**To update the live site:** open the folder for the changed file on GitHub, choose **Add file → Upload files**, drag it in, and commit. Changes usually appear within a few minutes. If a phone still shows the old version, close the tab and reopen the site.
 
 ## What's in the song bank
 
@@ -71,6 +82,7 @@ The list was checked row by row against Wikipedia's [List of songs by Taylor Swi
 
 - **New songs:** add them to the **end** of a list in `js/data.js`. Share links store each song's position, so inserting one mid-list would change old links. Don't reorder existing songs for the same reason.
 - **Personas and superlatives:** the copy and rules are in `js/logic.js`.
+- **Songs per page:** change `MAX_PER_SECTION` in `js/logic.js`. The site's text and counters update on their own, but the test that expects 7 and the superlative thresholds may need adjusting too.
 - **Tests:** run these after any change (needs [Node](https://nodejs.org)):
 
 ```bash
