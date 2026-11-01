@@ -250,9 +250,6 @@ h1:focus { outline: none; }
 
 .stat b.long { font-size: calc(15px * var(--display-scale)); line-height: 24px; overflow-wrap: normal; }
 .digits, .stat b.digits, .super b.digits { font-family: var(--digits); }
-.copy-link, .start-over { display: block; margin: 4px auto 0; }
-.start-over { margin-top: 14px; font-size: 15px; }
-.actions { margin-top: 26px; }
 .bar[hidden] { display: none; }
 
 /* Share */
@@ -305,10 +302,8 @@ h1:focus { outline: none; }
   background: rgba(var(--ink-rgb), .09);
   box-shadow: 0 0 0 1px rgba(var(--ink-rgb), .25), 0 6px 14px rgba(0, 0, 0, .16);
 }
-.share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.share-row .btn { padding-left: 8px; padding-right: 8px; }
-.share-row .btn + .btn { margin-top: 0; }
-.hint { font-size: 14px; margin: 10px 0 0; text-align: center; color: rgba(var(--ink-rgb), .76); }
+.result-links { display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
+.result-links .link-btn { padding: 8px 4px; font-size: 16px; }
 #toast {
   position: fixed;
   left: 50%;
