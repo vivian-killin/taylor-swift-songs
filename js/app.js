@@ -287,7 +287,7 @@
         h("button", { class: "back", on: { click: back } }, "← Back"),
         h("span", { class: "muted" }, `${state.section + 1} of ${CATALOG.sections.length}`)),
       h("div", { class: "dots" }, CATALOG.sections.map((s, i) => h("button", {
-        class: `dot${i === state.section ? " now" : ""}${picksIn(s).length ? " has-picks" : ""}`,
+        class: `dot${i === state.section ? " now" : i < state.section ? " done" : ""}`,
         "aria-label": `Go to ${s.title}`,
         "aria-current": i === state.section ? "step" : null,
         on: { click: () => go("section", { section: i }) },
@@ -343,8 +343,8 @@
         h("button", { class: "back", on: { click: () => go("section", { section: CATALOG.sections.length - 1 }) } }, "← Back"),
         h("span", { class: "muted" }, `${state.picks.length} on your shortlist`)),
       h("div", { class: "head" },
-        h("h1", { tabindex: "-1" }, "Now, the hard part"),
-        h("p", { class: "muted" }, "Keep your 10 favorites. The rest still count toward your album breakdown.")),
+        h("h1", { tabindex: "-1" }, "Narrow it down!"),
+        h("p", { class: "muted" }, "Keep your 10 favorites. You'll rank them; the rest still count toward your album breakdown.")),
       CATALOG.sections.filter((s) => picksIn(s).length > 0).map((section) => [
         h("div", { class: "group-name" }, section.title),
         picksIn(section).map((id) => {
@@ -488,9 +488,23 @@
 
   const cardFile = () => new File([card.blob], "top-10-taylor-swift-songs.png", { type: "image/png" });
 
-  function saveImage() {
+  const isIOS = () =>
+    /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  /* iPhones save downloads to Files. The share sheet's "Save Image" is how a site reaches Photos. */
+  async function saveImage() {
     if (!card.blob) { toast("One moment, still making your image."); return; }
-    const a = h("a", { href: card.url, download: cardFile().name });
+    const file = cardFile();
+    if (isIOS()) {
+      if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
+        toast("Press and hold the image to save it.");
+        return;
+      }
+      try { await navigator.share({ files: [file] }); }
+      catch (e) { if (e.name !== "AbortError") toast("Press and hold the image to save it."); }
+      return;
+    }
+    const a = h("a", { href: card.url, download: file.name });
     document.body.append(a);
     a.click();
     a.remove();
@@ -565,9 +579,11 @@
         h("label", { class: "field" }, "Add your name (optional)", nameInput),
         preview,
         h("div", { class: "share-row" },
-          h("button", { class: "btn", on: { click: saveImage } }, "Save image"),
+          h("button", { class: "btn", on: { click: saveImage } }, isIOS() ? "Save to Photos" : "Save image"),
           h("button", { class: "btn ghost", on: { click: () => shareCard(listTitle(state.name, fallback)) } }, "Share")),
-        h("p", { class: "hint" }, "Image won't save? Press and hold it instead."),
+        h("p", { class: "hint" }, isIOS()
+          ? "Then tap \"Save Image\" in the menu that opens."
+          : "Image won't save? Press and hold it instead."),
         h("button", {
           class: "link-btn copy-link",
           on: { click: () => copyText(shareLink(state.top, state.picks, state.name), "Link copied") },
