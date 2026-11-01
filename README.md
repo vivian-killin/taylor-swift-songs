@@ -6,19 +6,19 @@ It's a fan-made project, not affiliated with Taylor Swift or her labels. It uses
 
 ## How it works
 
-1. **Pick:** check up to 7 songs on each page: the 12 albums, plus one page of non-album songs. Any page can be skipped. Search finds songs from any album by title, featured artist or movie.
+1. **Pick:** check as many favorites as you like on each page: the 12 albums, plus one page of non-album songs. Any page can be skipped. Search finds songs from any album by title, featured artist or movie.
 2. **Narrow it down:** keep 10 from that shortlist. People need at least 10 picks to continue.
 3. **Rank:** drag the 10 into order, or use the arrows.
 4. **See results:** the album breakdown, one of 12 personas, and three superlatives.
-5. **Share:** add a name if you like, then swipe between the Top 10, Albums and Superlatives cards. Each one can be saved or shared, or all three saved together. There's also a link to the full results.
+5. **Share:** add a name if you like, then swipe between the Top 10, Albums and Superlatives cards. Sharing sends the card in view. There's also a link to the full results.
 
 **How the results are worked out**
 
 - **Album breakdown:** every shortlisted song earns 1 point, and the top 10 earn more on top of that: 10 for #1, down to 1 for #10.
 - **Personas:** the ranked top 10 counts for 70% and the shortlist for 30%, so picking more songs doesn't water down a favorite album.
-- **Colors and headline font:** these come from the album with the most points.
+- **Colors and headline font:** these come from the album that leads on the same 70/30 split as personas, so a long shortlist from one album doesn't outweigh a ranked favorite.
 
-**Saving images:** on iPhones and iPads, **Save to Photos** opens the share menu, where people tap **Save Image**, because a website can't save straight to Photos. Android and computers download the file.
+**Saving images:** on phones, **Share** opens the phone's share menu, which on iPhones includes **Save Image**. Browsers that can't share a file download the image instead.
 
 The site has no backend, accounts or tracking. Progress is saved in the person's browser until they choose **Start over and clear my results**, which also clears their name. Share links carry the results and optional name in the URL. The only outside requests are for Google Fonts.
 
@@ -82,7 +82,6 @@ The list was checked row by row against Wikipedia's [List of songs by Taylor Swi
 
 - **New songs:** add them to the **end** of a list in `js/data.js`. Share links store each song's position, so inserting one mid-list would change old links. Don't reorder existing songs for the same reason.
 - **Personas and superlatives:** the copy and rules are in `js/logic.js`.
-- **Songs per page:** change `MAX_PER_SECTION` in `js/logic.js`. The site's text and counters update on their own, but the test that expects 7 and the superlative thresholds may need adjusting too.
 - **Tests:** run these after any change (needs [Node](https://nodejs.org)):
 
 ```bash
