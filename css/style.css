@@ -101,7 +101,7 @@ h1:focus { outline: none; }
 .dots { display: flex; gap: 3px; margin: -8px 0 6px; }
 .dot { flex: 1; min-width: 0; height: 44px; padding: 19px 0; background: none; border: 0; }
 .dot::before { content: ""; display: block; height: 6px; border-radius: 3px; background: rgba(var(--ink-rgb), .25); }
-.dot.has-picks::before { background: var(--ink); }
+.dot.done::before { background: var(--ink); }
 .dot.now::before { background: var(--accent); box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--ink); }
 .head h1 { font-size: clamp(32px, 10vw, 42px); }
 .head p { margin: 8px 0 18px; }
@@ -280,6 +280,7 @@ h1:focus { outline: none; }
   margin-bottom: 16px;
 }
 .share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.share-row .btn { padding-left: 8px; padding-right: 8px; }
 .share-row .btn + .btn { margin-top: 0; }
 .hint { font-size: 14px; margin: 10px 0 0; text-align: center; color: rgba(var(--ink-rgb), .76); }
 #toast {
