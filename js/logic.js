@@ -2,7 +2,6 @@
 (function (root) {
   const SECTIONS = typeof module !== "undefined" ? require("./data.js") : root.TS_SECTIONS;
 
-  const MAX_PER_SECTION = 7;
   const TOP_N = 10;
   const RANK_POINTS = (TOP_N * (TOP_N + 1)) / 2;
 
@@ -169,11 +168,11 @@
   /* Listed strongest first. Results show the first three that apply. */
   const SUPERLATIVES = [
     { name: "Ten Minute Club", blurb: "You put the long one at #1. Bold of you to assume anyone has the time.", test: (c) => c.topSongs[0].id === "re28" },
-    { name: "Track 5 Truther", blurb: "You went for the saddest slot on the tracklist again and again. Are you okay?", test: (c) => c.track5s >= 4 },
+    { name: "Track 5 Truther", blurb: "You went for the saddest slot on the tracklist again and again. Are you okay?", test: (c) => c.track5s >= 3 && c.track5s / c.picks.length >= 0.1 },
     { name: "Holiday Menace", blurb: "A Christmas song in your favorites. Your family has asked you to stop in July.", test: (c) => c.picks.some((s) => s.kind === "holiday") },
-    { name: "Soundtrack Supervisor", blurb: "You've sat through the credits to hear the one song. Twice.", test: (c) => c.picks.filter((s) => s.kind === "soundtrack").length >= 3 },
-    { name: "Vault Raider", blurb: "Most likely to say 'it should have been on the album' at a party.", test: (c) => c.picks.filter((s) => s.vault).length >= 6 },
-    { name: "Feature Creature", blurb: "You love a duet. Everyone should bring a friend, apparently.", test: (c) => c.picks.filter((s) => s.feat).length >= 6 },
+    { name: "Soundtrack Supervisor", blurb: "You've sat through the credits to hear the one song. Twice.", test: (c) => c.mostly((s) => s.kind === "soundtrack", 3, 0.1) },
+    { name: "Vault Raider", blurb: "Most likely to say 'it should have been on the album' at a party.", test: (c) => c.mostly((s) => s.vault, 4, 0.2) },
+    { name: "Feature Creature", blurb: "You love a duet. Everyone should bring a friend, apparently.", test: (c) => c.mostly((s) => s.feat, 4, 0.2) },
     { name: "One Album Wonder", blurb: "Four or more of your top 10 share an album. Nobody's surprised.", test: (c) => c.maxInTop >= 4 },
     { name: "Commitment Issues", blurb: "Your top 10 spans at least seven albums. You can't settle down.", test: (c) => c.albumsInTop >= 7 },
     { name: "Certified Time Traveler", blurb: "More than 15 years between your oldest and newest favorites. You contain multitudes.", test: (c) => c.span >= 15 },
@@ -227,8 +226,15 @@
     const weightedYear =
       ids.reduce((sum, id) => sum + CATALOG.byId.get(id).year * scoreOf(id, topIds), 0) / total;
 
+    /* With no limit on picks, these need both a minimum count and a real share of the list. */
+    const mostly = (test, atLeast, share) => {
+      const count = picks.filter(test).length;
+      return count >= atLeast && count / picks.length >= share;
+    };
+
     const context = {
       picks,
+      mostly,
       topSongs,
       track5s: picks.filter((s) => s.track === 5).length,
       maxInTop: Math.max(...albums.map((a) => a.inTop)),
@@ -236,10 +242,14 @@
       span: Math.max(...years) - Math.min(...years),
     };
 
+    /* A long shortlist can outscore a ranked favorite, so the look follows the blended share, like the persona. */
+    const themeAlbum = albums.reduce((best, a) => (shares[a.code] > shares[best.code] ? a : best));
+
     return {
       persona: { id: persona, ...PERSONAS[persona] },
       albums,
       topAlbum: albums[0],
+      themeAlbum,
       secondAlbum: albums[1].score > 0 ? albums[1] : null,
       streak: albums[1].score > 0
         ? `Mostly ${albums[0].short}, with a ${albums[1].short} streak.`
@@ -303,7 +313,7 @@
   }
 
   const api = {
-    CATALOG, MAX_PER_SECTION, TOP_N, MAX_NAME, PERSONAS, SUPERLATIVES,
+    CATALOG, TOP_N, MAX_NAME, PERSONAS, SUPERLATIVES,
     sectionOf, isDeep, analyze, searchSongs, cleanName, versionLabel, encodeResult, decodeResult,
   };
   root.TS = api;

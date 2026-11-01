@@ -257,7 +257,7 @@
   };
 
   async function drawShareImage(result, { name, site, kind = "top10" }) {
-    const { theme, font } = result.topAlbum;
+    const { theme, font } = result.themeAlbum;
     const display = font.display;
     const textFamily = font.text ? `"${font.text.family}", Georgia, serif` : SYSTEM;
     if (document.fonts && document.fonts.load) {
@@ -304,7 +304,7 @@
 
     card.draw(ctx, result, y, H - 190, { theme, display, textFamily, textFamilyName: font.text ? font.text.family : "", contentW });
 
-    bracelet(ctx, clean || "TOP 10", H - 158, theme, result.albums.filter((a) => a.code !== result.topAlbum.code).slice(0, 5));
+    bracelet(ctx, clean || "TOP 10", H - 158, theme, result.albums.filter((a) => a.code !== result.themeAlbum.code).slice(0, 5));
 
     ctx.fillStyle = theme.ink;
     ctx.textAlign = "center";

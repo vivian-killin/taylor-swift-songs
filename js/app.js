@@ -1,6 +1,6 @@
 /* Screens and interaction. State lives in `state`; every change saves and re-renders. */
 (function () {
-  const { CATALOG, MAX_PER_SECTION, TOP_N, MAX_NAME, sectionOf, analyze, searchSongs, cleanName, versionLabel, encodeResult, decodeResult } = window.TS;
+  const { CATALOG, TOP_N, MAX_NAME, sectionOf, analyze, searchSongs, cleanName, versionLabel, encodeResult, decodeResult } = window.TS;
   const STORAGE_KEY = "top10-your-version-v1";
   const SHELL_THEME = { bg: "#251433", ink: "#FBF3E4", accent: "#F5C95D", accentInk: "#2A1800" };
   const QUIZ_FONT = {
@@ -132,13 +132,10 @@
 
   const picksIn = (section) => state.picks.filter((id) => CATALOG.byId.get(id).section === section.code);
 
-  function togglePick(song, section) {
+  function togglePick(song) {
     if (state.picks.includes(song.id)) {
       state.picks = state.picks.filter((id) => id !== song.id);
       state.top = state.top.filter((id) => id !== song.id);
-    } else if (picksIn(section).length >= MAX_PER_SECTION) {
-      toast(`That's ${MAX_PER_SECTION} from ${section.short}. Untap one to swap it.`);
-      return;
     } else {
       state.picks.push(song.id);
     }
@@ -156,8 +153,8 @@
         h("h1", { tabindex: "-1" }, "Top 10 ", h("em", null, "(Your Version)")),
         h("p", { class: "lede" }, "Rank your top 10 favorite Taylor Swift songs, then find out what your taste says about you!"),
         h("ol", { class: "steps" },
-          h("li", null, h("span", null, `Pick up to ${MAX_PER_SECTION} per album (or collabs/movies/whatever) to start narrowing down.`)),
-          h("li", null, h("span", null, "From there, choose your top 10.")),
+          h("li", null, h("span", null, "Pick favorites from each album (or collabs/movies/whatever) to help you narrow down.")),
+          h("li", null, h("span", null, "After going through each album, you'll choose your top 10 and rank them.")),
           h("li", null, h("span", null, "Get your album breakdown and share!"))),
         h("button", { class: "btn", on: { click: () => (saved ? go("section") : go("section", { section: 0 })) } }, saved ? "Pick up where you left off" : "Start ranking"),
         saved && h("button", { class: "btn ghost", on: { click: restart } }, "Start over"),
@@ -208,15 +205,13 @@
     const back = () => (state.section === 0 ? go("intro") : go("section", { section: state.section - 1 }));
 
     const row = (song, withAlbum) => {
-      const home = sectionOf(song);
       const on = state.picks.includes(song.id);
-      const locked = !on && picksIn(home).length >= MAX_PER_SECTION;
       const meta = metaLine(song, withAlbum);
       return h("button", {
-        class: `song${locked ? " locked" : ""}`,
+        class: "song",
         "aria-pressed": on ? "true" : "false",
         "data-song": song.id,
-        on: { click: () => togglePick(song, home) },
+        on: { click: () => togglePick(song) },
       },
         h("span", { class: "text" }, h("span", { class: "title" }, song.title), meta && h("span", { class: "meta" }, meta)),
         h("span", { class: "check", "aria-hidden": "true" }));
@@ -227,8 +222,8 @@
     const paintCount = () => {
       const total = `${state.picks.length} picked total`;
       countEl.replaceChildren(
-        searchQuery.trim() ? total : `${count} of ${MAX_PER_SECTION} on this page`,
-        h("small", null, searchQuery.trim() ? `up to ${MAX_PER_SECTION} per album` : total));
+        searchQuery.trim() ? total : `${count} on this page`,
+        !searchQuery.trim() && h("small", null, total));
     };
 
     /* Typing only redraws this list and the counter, so the keyboard stays open. */
@@ -295,8 +290,8 @@
       h("div", { class: "head" },
         h("h1", { tabindex: "-1" }, section.title),
         h("p", { class: "muted" }, section.year
-          ? `${section.year} · Tap your favorites, up to ${MAX_PER_SECTION}, or skip it.`
-          : `Movies, collabs and rarities. Tap up to ${MAX_PER_SECTION}, or skip it.`)),
+          ? `${section.year} · Tap your favorites, or skip it.`
+          : "Movies, collabs and rarities. Tap your favorites, or skip it.")),
       h("div", { class: "search" }, searchInput, clearBtn),
       listArea,
       h("div", { class: "bar" }, h("div", { class: "bar-inner" },
@@ -482,7 +477,7 @@
   async function refreshCards(result, name, imgs) {
     const run = ++cardState.run;
     cardState.blobs = [];
-    const font = result.topAlbum.font;
+    const font = result.themeAlbum.font;
     await Promise.all([ensureFont(font.display), ensureFont(font.text)]);
     for (let i = 0; i < CARDS.length; i++) {
       const blob = await window.drawShareImage(result, { name, site: siteLabel(), kind: CARDS[i].kind });
@@ -500,38 +495,27 @@
   const isIOS = () =>
     /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
-  /* iPhones save downloads to Files. The share sheet's "Save Image" is how a site reaches Photos. */
-  async function saveCards(indexes) {
-    if (!indexes.every((i) => cardState.blobs[i])) { toast("One moment, still making your images."); return; }
-    if (isIOS()) {
-      const files = indexes.map(cardFile);
-      if (!navigator.canShare || !navigator.canShare({ files })) {
-        toast("Press and hold an image to save it.");
-        return;
-      }
-      try { await navigator.share({ files }); }
-      catch (e) { if (e.name !== "AbortError") toast("Press and hold an image to save it."); }
-      return;
-    }
-    indexes.forEach((i, order) => setTimeout(() => {
-      const a = h("a", { href: cardState.urls[i], download: CARDS[i].file });
-      document.body.append(a);
-      a.click();
-      a.remove();
-    }, order * 400));
-    toast(indexes.length > 1 ? "Images saved" : "Image saved");
+  function downloadCard(i) {
+    const a = h("a", { href: cardState.urls[i], download: CARDS[i].file });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    toast("Image saved");
   }
 
+  /* The share sheet also offers "Save Image" on iPhones. Browsers that can't share a file get a download. */
   async function shareCard(title) {
     const i = cardState.current;
-    const text = `${title}. Make yours: ${SITE_URL}`;
-    const data = { title, text };
-    if (cardState.blobs[i] && navigator.canShare && navigator.canShare({ files: [cardFile(i)] })) data.files = [cardFile(i)];
-    if (navigator.share) {
+    if (!cardState.blobs[i]) { toast("One moment, still making your image."); return; }
+    const files = [cardFile(i)];
+    if (navigator.share && navigator.canShare && navigator.canShare({ files })) {
+      /* iPhones can drop the Save Image option when text is attached. The card already shows the site address. */
+      const data = isIOS() ? { files } : { files, title, text: `${title}. Make yours: ${SITE_URL}` };
       try { await navigator.share(data); return; }
       catch (e) { if (e.name === "AbortError") return; }
     }
-    copyText(text, "Copied. Paste it anywhere!");
+    if (isIOS()) toast("Press and hold the image to save it.");
+    else downloadCard(i);
   }
 
   async function copyText(value, message) {
@@ -547,8 +531,8 @@
     const friend = !!friendResult;
     const data = friendResult || state;
     const result = analyze(data.top, data.picks);
-    const font = result.topAlbum.font;
-    applyTheme(result.topAlbum.theme, font);
+    const font = result.themeAlbum.font;
+    applyTheme(result.themeAlbum.theme, font);
     ensureFont(font.display);
     ensureFont(font.text);
 
@@ -613,17 +597,14 @@
         h("p", { class: "swipe-note muted" }, "Swipe for all 3 cards."),
         h("div", { class: "card-tabs" }, tabs),
         scroller,
-        h("div", { class: "share-row" },
-          h("button", { class: "btn", on: { click: () => saveCards([cardState.current]) } }, isIOS() ? "Save to Photos" : "Save image"),
-          h("button", { class: "btn ghost", on: { click: () => shareCard(listTitle(state.name, fallback)) } }, "Share")),
-        h("p", { class: "hint" }, isIOS()
-          ? "Then tap \"Save Image\" in the menu that opens."
-          : "Image won't save? Press and hold it instead."),
-        h("button", { class: "link-btn copy-link", on: { click: () => saveCards(CARDS.map((c, i) => i)) } }, "Save all 3 cards"),
-        h("button", {
-          class: "link-btn copy-link",
-          on: { click: () => copyText(shareLink(state.top, state.picks, state.name), "Link copied") },
-        }, "Copy a link to my full results"));
+        h("button", { class: "btn", on: { click: () => shareCard(listTitle(state.name, fallback)) } }, "Share"),
+        h("div", { class: "result-links" },
+          h("button", {
+            class: "link-btn",
+            on: { click: () => copyText(shareLink(state.top, state.picks, state.name), "Link copied") },
+          }, "Copy a link to my full results"),
+          h("button", { class: "link-btn", on: { click: () => go("rank") } }, "Change my order"),
+          h("button", { class: "link-btn", on: { click: restart } }, "Start over and clear my results")));
       refreshCards(result, state.name, previews);
     }
 
@@ -670,9 +651,6 @@
         h("p", { class: "sub" }, "Voted most likely by nobody but your own list."),
         result.superlatives.map((s) => h("div", { class: "super" }, h("b", { class: /\d/.test(s.name) ? "digits" : null }, s.name), s.blurb))),
       shareSection,
-      !friend && h("div", { class: "actions" },
-        h("button", { class: "btn ghost", on: { click: () => go("rank") } }, "Change my order"),
-        h("button", { class: "link-btn start-over", on: { click: restart } }, "Start over and clear my results")),
       stickyBar,
       h("p", { class: "fine" }, "A fan-made project, not affiliated with Taylor Swift or her labels."),
     ];
