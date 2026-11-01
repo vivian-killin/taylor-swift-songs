@@ -249,7 +249,7 @@ h1:focus { outline: none; }
 .super b { display: block; font-family: var(--display); font-weight: var(--display-weight); font-style: var(--display-style); font-size: calc(20px * var(--display-scale)); line-height: 1.2; margin-bottom: 2px; }
 
 .stat b.long { font-size: calc(15px * var(--display-scale)); line-height: 24px; overflow-wrap: normal; }
-.digits, .stat b.digits { font-family: var(--digits); }
+.digits, .stat b.digits, .super b.digits { font-family: var(--digits); }
 .copy-link, .start-over { display: block; margin: 4px auto 0; }
 .start-over { margin-top: 14px; font-size: 15px; }
 .actions { margin-top: 26px; }
@@ -270,14 +270,40 @@ h1:focus { outline: none; }
   font: 500 16px/1.3 var(--text);
 }
 .field input::placeholder { color: rgba(var(--ink-rgb), .76); }
+.swipe-note { margin: 0 0 8px; font-size: 15px; }
+.card-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
+.card-tab {
+  min-height: 44px;
+  padding: 6px 4px;
+  border: 2px solid rgba(var(--ink-rgb), .55);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+}
+.card-tab[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.card-scroller {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  margin: 0 calc(var(--gutter) * -1) 16px;
+  padding: 4px 0 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.card-scroller::-webkit-scrollbar { display: none; }
+.card-scroller::before, .card-scroller::after { content: ""; flex: 0 0 calc(7% - 10px); }
+.card-slide { flex: 0 0 86%; scroll-snap-align: center; }
 .card-preview {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 5;
   border-radius: 14px;
   background: rgba(var(--ink-rgb), .09);
-  box-shadow: 0 0 0 1px rgba(var(--ink-rgb), .25), 0 10px 26px rgba(0, 0, 0, .18);
-  margin-bottom: 16px;
+  box-shadow: 0 0 0 1px rgba(var(--ink-rgb), .25), 0 6px 14px rgba(0, 0, 0, .16);
 }
 .share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .share-row .btn { padding-left: 8px; padding-right: 8px; }
