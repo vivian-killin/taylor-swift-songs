@@ -332,7 +332,11 @@ h1:focus { outline: none; }
   background: rgba(var(--ink-rgb), .09);
   box-shadow: 0 0 0 1px rgba(var(--ink-rgb), .25), 0 6px 14px rgba(0, 0, 0, .16);
 }
-.copy-link { display: block; margin: 8px auto 0; }
+.share-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.share-actions .btn { padding-left: 8px; padding-right: 8px; }
+.share-actions .btn + .btn { margin-top: 0; }
+.share-links { display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
+.share-links .link-btn { padding: 8px 4px; font-size: 16px; }
 .result-links { display: flex; flex-direction: column; align-items: center; margin-top: 18px; padding-top: 10px; border-top: 1px solid rgba(var(--ink-rgb), .25); }
 .result-links .link-btn { padding: 8px 4px; font-size: 16px; }
 #toast {
