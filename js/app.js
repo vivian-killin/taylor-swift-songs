@@ -137,7 +137,7 @@
       state.picks = state.picks.filter((id) => id !== song.id);
       state.top = state.top.filter((id) => id !== song.id);
     } else if (picksIn(section).length >= MAX_PER_SECTION) {
-      toast(`That's 5 from ${section.short}. Untap one to swap it.`);
+      toast(`That's ${MAX_PER_SECTION} from ${section.short}. Untap one to swap it.`);
       return;
     } else {
       state.picks.push(song.id);
@@ -156,7 +156,7 @@
         h("h1", { tabindex: "-1" }, "Top 10 ", h("em", null, "(Your Version)")),
         h("p", { class: "lede" }, "Rank your top 10 favorite Taylor Swift songs, then find out what your taste says about you!"),
         h("ol", { class: "steps" },
-          h("li", null, h("span", null, "Pick up to 5 per album (or collabs/movies/whatever) to start narrowing down.")),
+          h("li", null, h("span", null, `Pick up to ${MAX_PER_SECTION} per album (or collabs/movies/whatever) to start narrowing down.`)),
           h("li", null, h("span", null, "After that, from the ones you picked, choose your top 10.")),
           h("li", null, h("span", null, "Get your album breakdown and share with pals!"))),
         h("button", { class: "btn", on: { click: () => (saved ? go("section") : go("section", { section: 0 })) } }, saved ? "Pick up where you left off" : "Start ranking"),
@@ -171,8 +171,8 @@
     state = newState();
     friendResult = null;
     searchQuery = "";
-    card.run++;
-    card.blob = null;
+    cardState.run++;
+    cardState.blobs = [];
     history.replaceState({ screen: "intro", section: 0 }, "", location.pathname + location.search);
     render({ focus: true });
   }
@@ -471,50 +471,62 @@
   const shareLink = (top, picks, name) => `${SITE_URL}/#${encodeResult(top, picks, name)}`;
   const listTitle = (name, fallback) => `Top 10 Taylor Swift Songs: ${versionLabel(name, fallback)}`;
 
-  /* Sharing a file must start right from the tap on iPhones, so the image is made ahead of time. */
-  const card = { blob: null, url: null, run: 0 };
-  async function refreshCard(result, name, img) {
-    const run = ++card.run;
-    card.blob = null;
+  const CARDS = [
+    { kind: "top10", label: "Top 10", file: "top-10-taylor-swift-songs.png", alt: "Top 10 songs and persona" },
+    { kind: "albums", label: "Albums", file: "taylor-swift-album-breakdown.png", alt: "Album breakdown" },
+    { kind: "superlatives", label: "Superlatives", file: "taylor-swift-superlatives.png", alt: "Persona and superlatives" },
+  ];
+
+  /* Sharing a file must start right from the tap on iPhones, so the images are made ahead of time. */
+  const cardState = { run: 0, current: 0, blobs: [], urls: [] };
+  async function refreshCards(result, name, imgs) {
+    const run = ++cardState.run;
+    cardState.blobs = [];
     const font = result.topAlbum.font;
     await Promise.all([ensureFont(font.display), ensureFont(font.text)]);
-    const blob = await window.drawShareImage(result, { name, site: siteLabel() });
-    if (run !== card.run || !blob) return;
-    card.blob = blob;
-    if (card.url) URL.revokeObjectURL(card.url);
-    card.url = URL.createObjectURL(blob);
-    img.src = card.url;
+    for (let i = 0; i < CARDS.length; i++) {
+      const blob = await window.drawShareImage(result, { name, site: siteLabel(), kind: CARDS[i].kind });
+      if (run !== cardState.run) return;
+      if (!blob) continue;
+      if (cardState.urls[i]) URL.revokeObjectURL(cardState.urls[i]);
+      cardState.blobs[i] = blob;
+      cardState.urls[i] = URL.createObjectURL(blob);
+      imgs[i].src = cardState.urls[i];
+    }
   }
 
-  const cardFile = () => new File([card.blob], "top-10-taylor-swift-songs.png", { type: "image/png" });
+  const cardFile = (i) => new File([cardState.blobs[i]], CARDS[i].file, { type: "image/png" });
 
   const isIOS = () =>
     /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
   /* iPhones save downloads to Files. The share sheet's "Save Image" is how a site reaches Photos. */
-  async function saveImage() {
-    if (!card.blob) { toast("One moment, still making your image."); return; }
-    const file = cardFile();
+  async function saveCards(indexes) {
+    if (!indexes.every((i) => cardState.blobs[i])) { toast("One moment, still making your images."); return; }
     if (isIOS()) {
-      if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
-        toast("Press and hold the image to save it.");
+      const files = indexes.map(cardFile);
+      if (!navigator.canShare || !navigator.canShare({ files })) {
+        toast("Press and hold an image to save it.");
         return;
       }
-      try { await navigator.share({ files: [file] }); }
-      catch (e) { if (e.name !== "AbortError") toast("Press and hold the image to save it."); }
+      try { await navigator.share({ files }); }
+      catch (e) { if (e.name !== "AbortError") toast("Press and hold an image to save it."); }
       return;
     }
-    const a = h("a", { href: card.url, download: file.name });
-    document.body.append(a);
-    a.click();
-    a.remove();
-    toast("Image saved");
+    indexes.forEach((i, order) => setTimeout(() => {
+      const a = h("a", { href: cardState.urls[i], download: CARDS[i].file });
+      document.body.append(a);
+      a.click();
+      a.remove();
+    }, order * 400));
+    toast(indexes.length > 1 ? "Images saved" : "Image saved");
   }
 
   async function shareCard(title) {
+    const i = cardState.current;
     const text = `${title}. Make yours: ${SITE_URL}`;
     const data = { title, text };
-    if (card.blob && navigator.canShare && navigator.canShare({ files: [cardFile()] })) data.files = [cardFile()];
+    if (cardState.blobs[i] && navigator.canShare && navigator.canShare({ files: [cardFile(i)] })) data.files = [cardFile(i)];
     if (navigator.share) {
       try { await navigator.share(data); return; }
       catch (e) { if (e.name === "AbortError") return; }
@@ -543,15 +555,12 @@
     const maxScore = result.topAlbum.score;
     const fallback = friend ? "A Friend's Version" : "My Version";
     const friendName = friend ? cleanName(data.name) : "";
-    const streak = result.secondAlbum
-      ? `Mostly ${result.topAlbum.short}, with a ${result.secondAlbum.short} streak.`
-      : `All ${result.topAlbum.short}, all the time.`;
 
     const heading = h("h2");
     const setHeading = (name) => heading.replaceChildren(
       "Top ", h("span", { class: "digits" }, "10"), listTitle(name, fallback).replace("Top 10", ""));
     setHeading(data.name);
-    const preview = h("img", { class: "card-preview", alt: `Share image: ${result.persona.name}, with the top 10 songs listed in this section.` });
+    const previews = CARDS.map((c) => h("img", { class: "card-preview", alt: `Share image: ${c.alt}` }));
 
     let shareSection = null;
     if (!friend) {
@@ -569,26 +578,53 @@
             save();
             setHeading(state.name);
             clearTimeout(timer);
-            timer = setTimeout(() => refreshCard(result, state.name, preview), 250);
+            timer = setTimeout(() => refreshCards(result, state.name, previews), 250);
           },
           keydown: (e) => { if (e.key === "Enter") e.target.blur(); },
         },
       });
+      /* Swipe between cards, or tap a tab. Save and Share act on the card in view. */
+      cardState.current = 0;
+      const tabs = CARDS.map((c, i) => h("button", {
+        class: "card-tab",
+        "aria-pressed": i === 0 ? "true" : "false",
+        on: { click: () => {
+          const slide = scroller.children[i];
+          scroller.scrollTo({ left: slide.offsetLeft - (scroller.clientWidth - slide.offsetWidth) / 2, behavior: "smooth" });
+        } },
+      }, c.label));
+      const setCurrent = (i) => {
+        cardState.current = i;
+        tabs.forEach((tab, t) => tab.setAttribute("aria-pressed", t === i ? "true" : "false"));
+      };
+      const scroller = h("div", {
+        class: "card-scroller",
+        on: { scroll: () => {
+          const middle = scroller.scrollLeft + scroller.clientWidth / 2;
+          const slides = [...scroller.children];
+          const distance = (el) => Math.abs(el.offsetLeft + el.offsetWidth / 2 - middle);
+          setCurrent(slides.indexOf(slides.reduce((best, el) => (distance(el) < distance(best) ? el : best))));
+        } },
+      }, previews.map((img) => h("div", { class: "card-slide" }, img)));
+
       shareSection = h("section", { class: "panel share", id: "share" },
-        h("h2", null, "Share your list"),
+        h("h2", null, "Share your results"),
         h("label", { class: "field" }, "Add your name (optional)", nameInput),
-        preview,
+        h("p", { class: "swipe-note muted" }, "Swipe for all 3 cards."),
+        h("div", { class: "card-tabs" }, tabs),
+        scroller,
         h("div", { class: "share-row" },
-          h("button", { class: "btn", on: { click: saveImage } }, isIOS() ? "Save to Photos" : "Save image"),
+          h("button", { class: "btn", on: { click: () => saveCards([cardState.current]) } }, isIOS() ? "Save to Photos" : "Save image"),
           h("button", { class: "btn ghost", on: { click: () => shareCard(listTitle(state.name, fallback)) } }, "Share")),
         h("p", { class: "hint" }, isIOS()
           ? "Then tap \"Save Image\" in the menu that opens."
           : "Image won't save? Press and hold it instead."),
+        h("button", { class: "link-btn copy-link", on: { click: () => saveCards(CARDS.map((c, i) => i)) } }, "Save all 3 cards"),
         h("button", {
           class: "link-btn copy-link",
           on: { click: () => copyText(shareLink(state.top, state.picks, state.name), "Link copied") },
         }, "Copy a link to my full results"));
-      refreshCard(result, state.name, preview);
+      refreshCards(result, state.name, previews);
     }
 
     const stickyBar = h("div", { class: "bar" }, h("div", { class: "bar-inner" },
@@ -621,7 +657,7 @@
         }))),
       h("section", { class: "panel" },
         h("h2", null, "By album"),
-        h("p", { class: "sub" }, `${streak} Every shortlisted song earns a point, with up to 10 more for a spot in the top 10.`),
+        h("p", { class: "sub" }, `${result.streak} Every shortlisted song earns a point, with up to 10 more for a spot in the top 10.`),
         result.albums.filter((a) => a.score > 0).map((album) => h("div", { class: "album-row" },
           h("div", { class: "label" },
             h("span", { class: "swatch", style: { background: album.theme.bg }, "aria-hidden": "true" }),
@@ -632,7 +668,7 @@
       h("section", { class: "panel" },
         h("h2", null, "Superlatives"),
         h("p", { class: "sub" }, "Voted most likely by nobody but your own list."),
-        result.superlatives.map((s) => h("div", { class: "super" }, h("b", null, s.name), s.blurb))),
+        result.superlatives.map((s) => h("div", { class: "super" }, h("b", { class: /\d/.test(s.name) ? "digits" : null }, s.name), s.blurb))),
       shareSection,
       !friend && h("div", { class: "actions" },
         h("button", { class: "btn ghost", on: { click: () => go("rank") } }, "Change my order"),
