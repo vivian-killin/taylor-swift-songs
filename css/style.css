@@ -223,7 +223,42 @@ h1:focus { outline: none; }
 .result-hero .line { font: italic 500 20px/1.3 var(--text); margin: 0 0 14px; }
 .result-hero .roast { margin: 0; }
 .friend-note { background: rgba(var(--ink-rgb), .1); border-radius: 12px; padding: 10px 14px; margin: 6px 0 0; font-weight: 600; }
-.panel { padding: 24px 0 4px; border-top: 1px solid rgba(var(--ink-rgb), .25); margin-top: 22px; }
+.result-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: flex;
+  margin: 0 calc(var(--gutter) * -1);
+  padding: 0 8px;
+  background: var(--bg);
+  border-bottom: 1px solid rgba(var(--ink-rgb), .3);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.result-tabs::-webkit-scrollbar { display: none; }
+.result-tab {
+  flex: 1 0 auto;
+  min-height: 46px;
+  padding: 8px 5px;
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  color: rgba(var(--ink-rgb), .76);
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.result-tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 700; }
+.panel { padding: 20px 0 4px; }
+.panel[hidden] { display: none; }
+.short-album { display: flex; align-items: center; gap: 8px; margin: 14px 0 2px; font-weight: 700; }
+.short-album .swatch { flex: 0 0 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(var(--ink-rgb), .55); }
+.short-list { list-style: none; margin: 0; padding: 0; }
+.short-list li { display: flex; align-items: center; gap: 10px; padding: 3px 0 3px 20px; }
+.short-list .text { flex: 1; min-width: 0; }
+.short-list .title { display: block; font-weight: 500; overflow-wrap: anywhere; }
+.short-list .meta { display: block; font-size: 13px; line-height: 1.2; color: rgba(var(--ink-rgb), .76); }
+.short-rank { flex: 0 0 auto; font-weight: 700; font-size: 15px; color: var(--accent); }
 .panel h2 { font-size: calc(27px * var(--display-scale)); margin-bottom: 8px; }
 .panel .sub { margin: 0 0 14px; font-size: 14px; color: rgba(var(--ink-rgb), .76); }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 20px 0 0; }
@@ -267,23 +302,18 @@ h1:focus { outline: none; }
   font: 500 16px/1.3 var(--text);
 }
 .field input::placeholder { color: rgba(var(--ink-rgb), .76); }
-.swipe-note { margin: 0 0 8px; font-size: 15px; }
-.card-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
-.card-tab {
-  min-height: 44px;
-  padding: 6px 4px;
-  border: 2px solid rgba(var(--ink-rgb), .55);
-  border-radius: 999px;
-  background: transparent;
-  font-size: 15px;
-  font-weight: 600;
-}
-.card-tab[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.card-pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+.card-name { font-weight: 700; font-size: 15px; }
+.card-dots { display: flex; }
+.card-dot { width: 30px; height: 44px; padding: 0; background: none; border: 0; display: grid; place-items: center; }
+.card-dot::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(var(--ink-rgb), .78); }
+.card-dot[aria-pressed="true"]::before { background: var(--accent); border-color: var(--accent); }
+.card-note { margin: 0 0 14px; font-size: 15px; text-align: center; }
 .card-scroller {
   position: relative;
   display: flex;
   gap: 10px;
-  margin: 0 calc(var(--gutter) * -1) 16px;
+  margin: 0 calc(var(--gutter) * -1) 8px;
   padding: 4px 0 14px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -302,7 +332,8 @@ h1:focus { outline: none; }
   background: rgba(var(--ink-rgb), .09);
   box-shadow: 0 0 0 1px rgba(var(--ink-rgb), .25), 0 6px 14px rgba(0, 0, 0, .16);
 }
-.result-links { display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
+.copy-link { display: block; margin: 8px auto 0; }
+.result-links { display: flex; flex-direction: column; align-items: center; margin-top: 18px; padding-top: 10px; border-top: 1px solid rgba(var(--ink-rgb), .25); }
 .result-links .link-btn { padding: 8px 4px; font-size: 16px; }
 #toast {
   position: fixed;
